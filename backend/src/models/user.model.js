@@ -16,6 +16,24 @@ const providerDetailsSchema = new mongoose.Schema({
     default: false,
   },
   availability: [String],
+  bio: {
+    type: String,
+    default: "",
+  },
+  documents: {
+    citizenshipFront: {
+      type: String,
+      default: "",
+    },
+    citizenshipBack: {
+      type: String,
+      default: "",
+    },
+    extraDocument: {
+      type: String,
+      default: "",
+    },
+  },
 }, { _id: false });
 
 const userSchema = new mongoose.Schema(
@@ -75,6 +93,45 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["customer", "provider", "admin"],
       default: "customer",
+    },
+
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
+
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    emailOtp: {
+      type: String,
+      default: "",
+    },
+
+    emailOtpExpiresAt: {
+      type: Date,
+    },
+
+    providerStatus: {
+      type: String,
+      enum: ["none", "email_pending", "pending", "approved", "rejected"],
+      default: "none",
+    },
+
+    providerDecisionReason: {
+      type: String,
+      default: "",
+    },
+
+    refreshToken: {
+      type: String,
+      default: "",
+    },
+
+    refreshTokenExpiresAt: {
+      type: Date,
     },
 
     providerDetails: {

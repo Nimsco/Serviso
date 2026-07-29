@@ -31,6 +31,12 @@ const serviceSchema = new mongoose.Schema(
       default: "",
     },
 
+    availability: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     provider: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -54,5 +60,7 @@ const serviceSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+serviceSchema.index({ provider: 1 }, { unique: true });
 
 module.exports = mongoose.model("Service", serviceSchema);

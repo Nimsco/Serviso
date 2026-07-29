@@ -35,6 +35,39 @@ const bookingSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "completed", "cancelled"],
       default: "pending",
     },
+
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid"],
+      default: "pending",
+    },
+
+    amount: {
+      type: Number,
+      default: 0,
+    },
+
+    checkoutSessionId: {
+      type: String,
+      default: "",
+    },
+
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: null,
+    },
+
+    reviewComment: {
+      type: String,
+      default: "",
+    },
+
+    isReviewed: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

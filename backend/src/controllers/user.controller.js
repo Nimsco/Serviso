@@ -1,15 +1,51 @@
 const userModel = require("../models/user.model");
 const imagekit = require("../config/imagekit");
+const Service = require("../models/service.model");
 
 
-// 🔹 GET ALL PROVIDERS
+//  GET ALL PROVIDERS
 async function getProviders(req, res) {
   try {
-    const providers = await userModel
-      .find({ role: "provider" })
-      .select("-password");
+    const { search = "" } = req.query;
+    
+    let filter = { role: "provider", providerStatus: "approved", isBlocked: false };
+    
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
+      ];
+    }
 
-    res.status(200).json(providers);
+    const providers = await userModel
+      .find(filter)
+      .select("name username profilePic address providerDetails providerStatus");
+
+    const providerIds = providers.map((provider) => provider._id);
+    const services = await Service.find({
+      provider: { $in: providerIds },
+      isActive: true
+    });
+
+    const serviceMap = services.reduce((map, service) => {
+      map[service.provider.toString()] = service;
+      return map;
+    }, {});
+
+    const safeProviders = providers.map((provider) => {
+      const item = provider.toObject();
+
+      if (item.providerDetails?.documents) {
+        delete item.providerDetails.documents;
+      }
+
+      return {
+        ...item,
+        service: serviceMap[provider._id.toString()] || null,
+      };
+    });
+
+    res.status(200).json(safeProviders);
 
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -17,7 +53,7 @@ async function getProviders(req, res) {
 }
 
 
-// 🔹 GET LOGGED-IN USER
+// GET LOGGED-IN USER
 async function getMe(req, res) {
   try {
     const user = await userModel
@@ -36,7 +72,7 @@ async function getMe(req, res) {
 }
 
 
-// 🔹 UPDATE PROFILE
+// UPDATE PROFILE
 async function updateProfile(req, res) {
   try {
     const userId = req.user.id;
@@ -89,12 +125,10 @@ async function updateProfile(req, res) {
   }
 }
 
-const User = require("../models/user.model");
-
 async function getUserById(req, res) {
   try {
-    const user = await User.findById(req.params.id)
-      .select("-password");
+    const user = await userModel.findById(req.params.id)
+      .select("name username profilePic address role providerDetails providerStatus");
 
     if (!user) {
       return res.status(404).json({
@@ -102,17 +136,18 @@ async function getUserById(req, res) {
       });
     }
 
-    res.json(user);
+    const safeUser = user.toObject();
+
+    if (safeUser.providerDetails?.documents) {
+      delete safeUser.providerDetails.documents;
+    }
+
+    res.json(safeUser);
 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 }
-
-module.exports = {
-  getUserById,
-};
-
 
 module.exports = {
   getProviders,
