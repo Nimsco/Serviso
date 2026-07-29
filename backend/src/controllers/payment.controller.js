@@ -30,8 +30,14 @@ async function createCheckoutSession(req, res) {
         },
       ],
 
-      success_url: `${process.env.CLIENT_URL}/success?serviceId=${serviceId}&date=${date}&time=${time}`,
+      success_url: `${process.env.CLIENT_URL}/success?serviceId=${serviceId}&date=${date}&time=${time}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/cancel`,
+      metadata: {
+        serviceId,
+        date,
+        time,
+        customerId: req.user._id.toString(),
+      },
     });
 
     res.json({ url: session.url });

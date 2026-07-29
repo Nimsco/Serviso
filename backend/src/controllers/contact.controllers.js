@@ -4,7 +4,6 @@ async function sendContactEmail(req, res) {
   try {
     const { name, email, message } = req.body;
 
-    // transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -16,7 +15,7 @@ async function sendContactEmail(req, res) {
     // mail content
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER, // you receive it
+      to: process.env.EMAIL_USER,
       subject: `New Contact Message from ${name}`,
       html: `
         <h3>New Contact Message</h3>

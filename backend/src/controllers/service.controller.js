@@ -1,16 +1,37 @@
 const Service = require("../models/service.model");
+const Category = require("../models/category.model");
 
 // CREATE SERVICE (ONLY PROVIDER)
 async function createService(req, res) {
     try {
-        const { title, description, category, price, image } = req.body;
+        const { description, price, availability } = req.body;
+        const providerCategory = req.user.providerDetails?.categories?.[0];
+
+        if (req.user.providerStatus !== "approved") {
+            return res.status(403).json({ message: "Provider account is not approved" });
+        }
+
+        if (!providerCategory) {
+            return res.status(400).json({ message: "No approved provider category found" });
+        }
+
+        const existingService = await Service.findOne({
+            provider: req.user._id,
+        });
+
+        if (existingService) {
+            return res.status(400).json({
+                message: "Each provider account can create only one service"
+            });
+        }
 
         const service = await Service.create({
-            title,
+            title: `${req.user.name} - ${providerCategory}`,
             description,
-            category,
+            category: providerCategory,
             price,
-            image,
+            image: req.user.profilePic,
+            availability,
             provider: req.user._id
         });
 
@@ -27,16 +48,26 @@ async function createService(req, res) {
 // GET ALL SERVICES (PUBLIC)
 async function getAllServices(req, res) {
   try {
-    const filter = {};
+    const filter = { isActive: true };
 
     if (req.query.provider) {
       filter.provider = req.query.provider;
     }
 
-    const services = await Service.find(filter)
-      .populate("provider", "name username profilePic");
+    if (req.query.category) {
+      filter.category = { $regex: `^${req.query.category}$`, $options: "i" };
+    }
 
-    res.json(services);
+    const services = await Service.find(filter)
+      .populate("provider", "name username profilePic providerStatus isBlocked address");
+
+    const approvedServices = services.filter((service) =>
+      service.provider &&
+      service.provider.providerStatus === "approved" &&
+      !service.provider.isBlocked
+    );
+
+    res.json(approvedServices);
 
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -48,7 +79,7 @@ async function getAllServices(req, res) {
 async function getServiceById(req, res) {
   try {
     const service = await Service.findById(req.params.id)
-      .populate("provider", "name username profilePic"); // ✅ FIX
+      .populate("provider", "name username profilePic address providerStatus isBlocked");
 
     if (!service) {
       return res.status(404).json({
@@ -75,11 +106,20 @@ async function getProviderServices(req, res) {
   }
 }
 
+async function getPublicCategories(req, res) {
+  try {
+    const categories = await Category.find({ isActive: true }).sort({ name: 1 });
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
 
 module.exports = {
     createService,
     getAllServices,
     getServiceById,
-    getAllServices,
-    getProviderServices
+    getProviderServices,
+    getPublicCategories
 };

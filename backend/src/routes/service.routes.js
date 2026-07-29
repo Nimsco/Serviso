@@ -2,9 +2,11 @@ const express = require("express");
 const router = express.Router();
 
 const { protect, authorizeRoles } = require("../middlewares/auth.middleware");
-const { createService, getAllServices, getServiceById, getProviderServices } = require("../controllers/service.controller");
+const { createService, getAllServices, getServiceById, getProviderServices, getPublicCategories } = require("../controllers/service.controller");
 
 router.get("/", getAllServices);
+
+router.get("/categories", getPublicCategories);
 
 router.post("/", protect, authorizeRoles("provider"), createService);
 
