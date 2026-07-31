@@ -11,11 +11,15 @@ import Providers from "./pages/Providers";
 import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ProviderRegister from "./pages/ProviderRegister";
+import VerifyEmail from "./pages/VerifyEmail";
 import EditProfile from "./pages/EditProfile";
 import BookService from "./pages/BookService";
 import Cancel from "./pages/Cancel";
 import Success from "./pages/Success";
 import AdminDashboard from "./pages/AdminDashboard";
+import ProviderDashboard from "./pages/ProviderDashboard";
+import GoogleAuthCallback from "./pages/GoogleAuthCallback";
 import CategoryServices from "../src/components/Services/CategoryServices";
 import ProviderProfile from "../src/components/Providers/ProviderProfile";
 
@@ -33,12 +37,16 @@ const App = () => {
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+          <Route path="/provider-register" element={<ProviderRegister />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/book/:id" element={<BookService />} />
           <Route path="/success" element={<Success />} />
           <Route path="/cancel" element={<Cancel />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/provider-dashboard" element={<ProviderDashboard />} />
           <Route path="/services/:category" element={<CategoryServices />} />
           <Route path="/provider/:id" element={<ProviderProfile />} />
 

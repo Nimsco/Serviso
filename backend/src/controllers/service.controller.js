@@ -1,11 +1,16 @@
 const Service = require("../models/service.model");
 const Category = require("../models/category.model");
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // CREATE SERVICE (ONLY PROVIDER)
 async function createService(req, res) {
     try {
         const { description, price, availability } = req.body;
         const providerCategory = req.user.providerDetails?.categories?.[0];
+        const numericPrice = Number(price);
 
         if (req.user.providerStatus !== "approved") {
             return res.status(403).json({ message: "Provider account is not approved" });
@@ -13,6 +18,10 @@ async function createService(req, res) {
 
         if (!providerCategory) {
             return res.status(400).json({ message: "No approved provider category found" });
+        }
+
+        if (!description || !availability || !Number.isFinite(numericPrice) || numericPrice <= 0) {
+            return res.status(400).json({ message: "Description, availability, and a valid price are required" });
         }
 
         const existingService = await Service.findOne({
@@ -29,7 +38,7 @@ async function createService(req, res) {
             title: `${req.user.name} - ${providerCategory}`,
             description,
             category: providerCategory,
-            price,
+            price: numericPrice,
             image: req.user.profilePic,
             availability,
             provider: req.user._id
@@ -45,6 +54,83 @@ async function createService(req, res) {
     }
 }
 
+async function updateProviderService(req, res) {
+  try {
+    const { description, price, availability } = req.body;
+    const providerCategory = req.user.providerDetails?.categories?.[0];
+    const numericPrice = Number(price);
+
+    if (req.user.providerStatus !== "approved") {
+      return res.status(403).json({ message: "Provider account is not approved" });
+    }
+
+    if (!providerCategory) {
+      return res.status(400).json({ message: "No approved provider category found" });
+    }
+
+    if (!description || !availability || !Number.isFinite(numericPrice) || numericPrice <= 0) {
+      return res.status(400).json({ message: "Description, availability, and a valid price are required" });
+    }
+
+    const service = await Service.findOneAndUpdate(
+      { provider: req.user._id },
+      {
+        $set: {
+          title: `${req.user.name} - ${providerCategory}`,
+          description,
+          category: providerCategory,
+          price: numericPrice,
+          image: req.user.profilePic,
+          availability,
+        },
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!service) {
+      return res.status(404).json({ message: "Service setup not found" });
+    }
+
+    res.json({
+      message: "Service setup updated",
+      service,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
+async function updateProviderServiceStatus(req, res) {
+  try {
+    const { isActive } = req.body;
+
+    if (req.user.providerStatus !== "approved") {
+      return res.status(403).json({ message: "Provider account is not approved" });
+    }
+
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({ message: "Active status must be true or false" });
+    }
+
+    const service = await Service.findOneAndUpdate(
+      { provider: req.user._id },
+      { $set: { isActive } },
+      { new: true, runValidators: true }
+    );
+
+    if (!service) {
+      return res.status(404).json({ message: "Service setup not found" });
+    }
+
+    res.json({
+      message: isActive ? "Service is now active for bookings" : "Service is now inactive for bookings",
+      service,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
 // GET ALL SERVICES (PUBLIC)
 async function getAllServices(req, res) {
   try {
@@ -55,7 +141,7 @@ async function getAllServices(req, res) {
     }
 
     if (req.query.category) {
-      filter.category = { $regex: `^${req.query.category}$`, $options: "i" };
+      filter.category = { $regex: `^${escapeRegex(req.query.category)}$`, $options: "i" };
     }
 
     const services = await Service.find(filter)
@@ -81,7 +167,12 @@ async function getServiceById(req, res) {
     const service = await Service.findById(req.params.id)
       .populate("provider", "name username profilePic address providerStatus isBlocked");
 
-    if (!service) {
+    if (
+      !service ||
+      !service.isActive ||
+      service.provider?.providerStatus !== "approved" ||
+      service.provider?.isBlocked
+    ) {
       return res.status(404).json({
         message: "Service not found",
       });
@@ -118,6 +209,8 @@ async function getPublicCategories(req, res) {
 
 module.exports = {
     createService,
+    updateProviderService,
+    updateProviderServiceStatus,
     getAllServices,
     getServiceById,
     getProviderServices,

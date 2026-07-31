@@ -1,0 +1,76 @@
+/* src/variables.css */
+
+:root {
+  /* Common tokens */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Light Theme Colors (Default) */
+  --bg: #f8fafc; /* slate-50 */
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9; /* slate-100 */
+  --text: #0f172a; /* slate-900 */
+  --text-secondary: #475569; /* slate-600 */
+  --text-muted: #94a3b8; /* slate-400 */
+  
+  /* Premium Strong Blue Palette */
+  --primary: #1d4ed8; /* blue-700 */
+  --primary-hover: #1e40af; /* blue-800 */
+  --primary-light: #eff6ff; /* blue-50 */
+  --primary-border: #bfdbfe; /* blue-200 */
+  
+  /* UI accents */
+  --border: #e2e8f0; /* slate-200 */
+  --border-focus: #3b82f6; /* blue-500 */
+  --input-bg: #ffffff;
+  --shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  
+  /* Hero specific light mode */
+  --hero-bg: #f1f5f9; /* Slate 100 flat solid background */
+  --hero-text: #0f172a;
+  --hero-text-muted: #475569;
+  
+  /* Statuses */
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+}
+
+[data-theme="dark"] {
+  /* Dark Theme Colors */
+  --bg: #090d16;
+  --bg-card: #111827; /* gray-900 */
+  --bg-card-hover: #1f2937; /* gray-800 */
+  --text: #f9fafb; /* gray-50 */
+  --text-secondary: #d1d5db; /* gray-300 */
+  --text-muted: #6b7280; /* gray-500 */
+  
+  /* Dark theme primary stays vibrant but fitting */
+  --primary: #3b82f6; /* blue-500 */
+  --primary-hover: #60a5fa; /* blue-400 */
+  --primary-light: #1e3a8a; /* blue-900 */
+  --primary-border: #2563eb; /* blue-600 */
+  
+  /* Dark theme UI accents */
+  --border: #374151; /* gray-700 */
+  --border-focus: #60a5fa;
+  --input-bg: #1f2937;
+  --shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  
+  /* Hero specific dark mode */
+  --hero-bg: #0f172a; /* Slate 900 flat solid background */
+  --hero-text: #ffffff;
+  --hero-text-muted: #cbd5e1;
+  
+  /* Statuses */
+  --success: #34d399;
+  --success-bg: #064e3b;
+  --warning: #fbbf24;
+  --warning-bg: #78350f;
+  --danger: #f87171;
+  --danger-bg: #7f1d1d;
+}

@@ -1,10 +1,10 @@
-// components/services/ServicesGrid.jsx
+import React from "react";
 import ServiceCard from "./ServiceCard";
 
 const ServicesGrid = ({ services }) => {
   if (services.length === 0) {
     return (
-      <p className="text-center text-gray-500">
+      <p className="text-center text-[var(--text-secondary)] py-12">
         No services available right now.
       </p>
     );

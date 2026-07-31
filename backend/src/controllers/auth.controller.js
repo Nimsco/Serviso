@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const imagekit = require("../config/imagekit");
 const sendEmail = require("../utils/sendEmail");
+const passport = require("../middlewares/googleAuth.middleware");
 
 // ──────────────────────────────────────────────
 // Helper: upload image to ImageKit
@@ -16,6 +17,36 @@ async function uploadImage(file) {
     });
 
     return uploadedImage.url;
+}
+
+function parseDob(dob) {
+    if (!dob) return null;
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob);
+    if (!match) return null;
+
+    const [, year, month, day] = match.map(Number);
+    const parsedDob = new Date(year, month - 1, day);
+
+    if (
+        parsedDob.getFullYear() !== year ||
+        parsedDob.getMonth() !== month - 1 ||
+        parsedDob.getDate() !== day
+    ) {
+        return null;
+    }
+
+    return parsedDob;
+}
+
+function isFutureDate(date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const value = new Date(date);
+    value.setHours(0, 0, 0, 0);
+
+    return value > today;
 }
 
 // ──────────────────────────────────────────────
@@ -80,8 +111,6 @@ async function registerUser(req, res) {
             address,
             category,
             experience,
-            hourlyRate,
-            availability,
             bio
         } = req.body;
 
@@ -133,11 +162,27 @@ async function registerUser(req, res) {
 
         //  ROLE SAFETY
         const finalRole = role === "provider" ? "provider" : "customer";
+        const isProvider = finalRole === "provider";
+
+        if (!phone || !gender || !dob || (!isProvider && !address)) {
+            return res.status(400).json({
+                message: isProvider
+                    ? "Phone, gender, and date of birth are required"
+                    : "Phone, gender, date of birth, and address are required"
+            });
+        }
+
+        const parsedDob = parseDob(dob);
+
+        if (!parsedDob || isFutureDate(parsedDob)) {
+            return res.status(400).json({
+                message: "Date of birth cannot be in the future"
+            });
+        }
 
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const hashedOtp = await bcrypt.hash(otp, 10);
-        const isProvider = finalRole === "provider";
         const profilePicFile = req.file || req.files?.profilePic?.[0];
         const citizenshipFrontFile = req.files?.citizenshipFront?.[0];
         const citizenshipBackFile = req.files?.citizenshipBack?.[0];
@@ -162,8 +207,8 @@ async function registerUser(req, res) {
             role: finalRole,
             phone,
             gender,
-            dob,
-            address,
+            dob: parsedDob,
+            address: isProvider ? "" : address,
             profilePic: profilePicUrl,
             emailVerified: false,
             emailOtp: hashedOtp,
@@ -175,9 +220,9 @@ async function registerUser(req, res) {
             userData.providerDetails = {
                 categories: category ? [category] : [],
                 experience: Number(experience) || 0,
-                hourlyRate: Number(hourlyRate) || 0,
+                hourlyRate: 0,
                 isVerified: false,
-                availability: availability ? availability.split(",").map((day) => day.trim()).filter(Boolean) : [],
+                availability: [],
                 bio: bio || "",
                 documents: {
                     citizenshipFront: citizenshipFrontUrl,
@@ -234,6 +279,10 @@ async function loginUser(req, res) {
 
         if (user.isBlocked) {
             return res.status(403).json({ message: "Your account is temporarily blocked" });
+        }
+
+        if (!user.password) {
+            return res.status(401).json({ message: "Please continue with Google for this account" });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -450,9 +499,49 @@ async function getProfile(req, res) {
     try {
         const user = await userModel.findById(req.user.id).select("-password -refreshToken -refreshTokenExpiresAt");
 
-        res.status(200).json(user);
+res.status(200).json(user);
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+}
+
+// ──────────────────────────────────────────────
+// GET /api/auth/google
+// Initiate Google OAuth flow
+// ──────────────────────────────────────────────
+async function googleLogin(req, res, next) {
+    // This will redirect to Google OAuth
+    passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+}
+
+// ──────────────────────────────────────────────
+// GET /api/auth/google/callback
+// Google OAuth callback
+// ──────────────────────────────────────────────
+async function googleCallback(req, res, next) {
+    try {
+        // This will handle the Google OAuth callback
+        passport.authenticate('google', async (err, user, info) => {
+            const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
+            if (err) {
+                console.error('Google authentication error:', err);
+                return res.redirect(`${clientUrl}/login?googleAuth=error`);
+            }
+            
+            if (!user) {
+                console.error('Google authentication failed - no user returned', info);
+                return res.redirect(`${clientUrl}/login?googleAuth=failed`);
+            }
+            
+            // Issue tokens for the authenticated user
+            await issueTokens(res, user);
+            
+            return res.redirect(`${clientUrl}/auth/google/callback`);
+        })(req, res, next);
+    } catch (err) {
+        console.error('Google callback error:', err);
+        return res.status(500).json({ message: err.message });
     }
 }
 
@@ -462,5 +551,7 @@ module.exports = {
     logoutUser,
     getProfile,
     verifyEmail,
-    refreshAccessToken
+    refreshAccessToken,
+    googleLogin,
+    googleCallback
 };

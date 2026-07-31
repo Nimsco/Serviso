@@ -19,11 +19,6 @@ const contactRoutes = require("./src/routes/contact.routes");
 
 app.use("/api/contact", contactRoutes);
 
-// User routes
-const userRoutes = require("./src/routes/userRoutes");
-app.use("/api/users", userRoutes);
-
-
 app.listen(PORT,()=>{
     console.log(`Server is running in port ${PORT}`)
 })

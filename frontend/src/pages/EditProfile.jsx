@@ -2,9 +2,13 @@ import React, { useEffect, useState } from "react";
 import { getProfile, updateProfile } from "../api/auth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { selectAccessToken, setCredentials } from "../store/authSlice";
 
 const EditProfile = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const accessToken = useSelector(selectAccessToken);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -18,6 +22,8 @@ const EditProfile = () => {
 
   const [preview, setPreview] = useState("");
   const [loading, setLoading] = useState(false);
+  const isProvider = formData.role === "provider";
+  const profileIncomplete = !formData.phone || !formData.gender || !formData.dob || (!isProvider && !formData.address);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -40,6 +46,12 @@ const EditProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (formData.dob && new Date(formData.dob) > new Date()) {
+      toast.error("Date of birth cannot be in the future");
+      return;
+    }
+
     setLoading(true);
 
     const data = new FormData();
@@ -51,33 +63,61 @@ const EditProfile = () => {
     });
 
     try {
-      await updateProfile(data);
-      toast.success("Profile updated successfully")
+      const res = await updateProfile(data);
+      const user = res.data.user;
+
+      dispatch(setCredentials({
+        user: {
+          id: user._id,
+          name: user.name,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+          gender: user.gender,
+          dob: user.dob,
+          address: user.address,
+          profilePic: user.profilePic,
+        },
+        accessToken,
+      }));
+
+      toast.success("Profile updated successfully");
       navigate("/profile");
     } catch (err) {
       console.log(err);
+      toast.error(err.response?.data?.message || "Failed to update profile");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 flex items-center justify-center px-4">
-      <div className="bg-white shadow-xl rounded-2xl w-full max-w-3xl p-8">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex items-center justify-center px-4 py-12 transition-colors duration-200">
+      <div className="bg-[var(--bg-card)] border border-[var(--border)] shadow-lg rounded-2xl w-full max-w-3xl p-8 space-y-6">
 
-        <h2 className="text-3xl font-bold text-blue-600 text-center mb-6">
-          Edit Profile
+        <h2 className="text-3xl font-extrabold text-[var(--primary)] text-center tracking-tight">
+          {profileIncomplete ? "Complete Profile" : "Edit Profile"}
         </h2>
 
+        {profileIncomplete && (
+          <p className="text-center text-sm text-[var(--text-secondary)] max-w-xl mx-auto">
+            Add your phone number, gender, and date of birth{isProvider ? "" : ", plus your home address"} so your Google account has the same profile details as a regular Serviso account.
+          </p>
+        )}
+
         {/* PROFILE IMAGE */}
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center gap-3">
           <img
             src={preview || "/user.png"}
             alt="preview"
-            className="w-28 h-28 rounded-full object-cover border-4 border-blue-200"
+            className="w-28 h-28 rounded-full object-cover border-4 border-[var(--primary-light)] shadow-sm"
+            onError={(e) => {
+              e.target.src = "https://img.icons8.com/color/96/user-male-circle--v1.png";
+            }}
           />
 
-          <label className="mt-3 cursor-pointer text-sm text-blue-500 hover:underline">
+          <label className="cursor-pointer text-xs font-bold uppercase tracking-wider text-[var(--primary)] hover:underline">
             Change Photo
             <input
               type="file"
@@ -89,49 +129,52 @@ const EditProfile = () => {
         </div>
 
         {/* FORM */}
-        <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-5">
+        <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-5 pt-4">
 
           {/* NAME */}
-          <div>
-            <label className="text-sm text-gray-600">Full Name</label>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Full Name</label>
             <input
               name="name"
-              value={formData.name}
+              value={formData.name || ""}
               onChange={handleChange}
-              className="w-full mt-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] p-3 rounded-xl focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 transition duration-200"
+              required
             />
           </div>
 
           {/* EMAIL (disabled) */}
-          <div>
-            <label className="text-sm text-gray-600">Email</label>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Email Address</label>
             <input
               name="email"
-              value={formData.email}
+              value={formData.email || ""}
               disabled
-              className="w-full mt-1 p-2 border rounded-lg bg-gray-100 cursor-not-allowed"
+              className="w-full border border-[var(--border)] bg-[var(--bg-card-hover)] text-[var(--text-muted)] p-3 rounded-xl cursor-not-allowed"
             />
           </div>
 
           {/* PHONE */}
-          <div>
-            <label className="text-sm text-gray-600">Phone</label>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Phone Number</label>
             <input
               name="phone"
-              value={formData.phone}
+              value={formData.phone || ""}
               onChange={handleChange}
-              className="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+              className="w-full border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] p-3 rounded-xl focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 transition duration-200"
+              required
             />
           </div>
 
           {/* GENDER */}
-          <div>
-            <label className="text-sm text-gray-600">Gender</label>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Gender</label>
             <select
               name="gender"
-              value={formData.gender}
+              value={formData.gender || ""}
               onChange={handleChange}
-              className="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+              className="w-full border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] p-3 rounded-xl focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 transition duration-200"
+              required
             >
               <option value="">Select</option>
               <option value="male">Male</option>
@@ -141,36 +184,41 @@ const EditProfile = () => {
           </div>
 
           {/* DOB */}
-          <div>
-            <label className="text-sm text-gray-600">Date of Birth</label>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Date of Birth</label>
             <input
               type="date"
               name="dob"
-              value={formData.dob?.slice(0, 10)}
+              value={formData.dob?.slice(0, 10) || ""}
               onChange={handleChange}
-              className="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+              max={new Date().toISOString().split("T")[0]}
+              className="w-full border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] p-3 rounded-xl focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 transition duration-200"
+              required
             />
           </div>
 
           {/* ADDRESS */}
-          <div className="md:col-span-2">
-            <label className="text-sm text-gray-600">Address</label>
-            <input
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
+          {!isProvider && (
+            <div className="md:col-span-2 space-y-1">
+              <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Address</label>
+              <input
+                name="address"
+                value={formData.address || ""}
+                onChange={handleChange}
+                className="w-full border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] p-3 rounded-xl focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 transition duration-200"
+                required
+              />
+            </div>
+          )}
 
           {/* BUTTON */}
           <div className="md:col-span-2 mt-4">
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
+              className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3.5 rounded-xl font-bold tracking-wide transition duration-200 cursor-pointer shadow-md hover:shadow-lg active:scale-98"
             >
-              {loading ? "Updating..." : "Update Profile"}
+              {loading ? "Updating..." : "Save Changes"}
             </button>
           </div>
 

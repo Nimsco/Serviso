@@ -2,6 +2,35 @@ const userModel = require("../models/user.model");
 const imagekit = require("../config/imagekit");
 const Service = require("../models/service.model");
 
+function parseDob(dob) {
+  if (!dob) return null;
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob);
+  if (!match) return null;
+
+  const [, year, month, day] = match.map(Number);
+  const parsedDob = new Date(year, month - 1, day);
+
+  if (
+    parsedDob.getFullYear() !== year ||
+    parsedDob.getMonth() !== month - 1 ||
+    parsedDob.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return parsedDob;
+}
+
+function isFutureDate(date) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+
+  return value > today;
+}
 
 //  GET ALL PROVIDERS
 async function getProviders(req, res) {
@@ -83,9 +112,18 @@ async function updateProfile(req, res) {
       "phone",
       "gender",
       "dob",
-      "address"
       // email removed 
     ];
+
+    const currentUser = await userModel.findById(userId).select("role");
+
+    if (!currentUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (currentUser.role !== "provider") {
+      allowedFields.push("address");
+    }
 
     let updateData = {};
 
@@ -95,6 +133,16 @@ async function updateProfile(req, res) {
         updateData[field] = req.body[field];
       }
     });
+
+    if (req.body.dob !== undefined) {
+      const parsedDob = parseDob(req.body.dob);
+
+      if (!parsedDob || isFutureDate(parsedDob)) {
+        return res.status(400).json({ message: "Date of birth cannot be in the future" });
+      }
+
+      updateData.dob = parsedDob;
+    }
 
     //  IMAGE UPLOAD
     if (req.file) {
