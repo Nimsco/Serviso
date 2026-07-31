@@ -1,16 +1,19 @@
-// components/services/ServicesHeader.jsx
+import React from "react";
+import PageHeader from "../UI/PageHeader";
 
-const ServicesHeader = () => {
-  return (
-    <div className="mb-10 text-center">
-      <h1 className="text-3xl md:text-4xl font-bold text-blue-500">
-        Explore Services
-      </h1>
-      <p className="text-gray-500 mt-2">
-        Find the best service providers near you
-      </p>
-    </div>
-  );
-};
+const ServicesHeader = () => (
+  <PageHeader
+    eyebrow="Service catalog"
+    title="Choose the right service for your home or workplace."
+    description="Browse trusted categories, compare available professionals, and book only within a clear 7-day schedule so requests stay realistic."
+    image="/electrician.jpg"
+    stats={[
+      { value: "Verified", label: "Provider checks" },
+      { value: "Paid", label: "Confirmed bookings" },
+      { value: "Live", label: "Active providers only" },
+      { value: "Local", label: "Nepal service network" },
+    ]}
+  />
+);
 
 export default ServicesHeader;

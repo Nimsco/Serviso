@@ -13,12 +13,12 @@ const Stats = () => {
       {data.map((item) => (
         <div
           key={item.label}
-          className="text-center bg-blue-50 p-6 rounded-xl shadow-sm"
+          className="text-center bg-[var(--bg-card)] border border-[var(--border)] p-6 rounded-2xl shadow-xs hover:shadow-sm transition-all duration-200"
         >
-          <h3 className="text-2xl font-bold text-blue-500">
+          <h3 className="text-2xl md:text-3xl font-extrabold text-[var(--primary)]">
             {item.value}
           </h3>
-          <p className="text-gray-600 text-sm mt-2">{item.label}</p>
+          <p className="text-[var(--text-secondary)] text-sm mt-2 font-medium">{item.label}</p>
         </div>
       ))}
     </div>

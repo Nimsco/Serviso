@@ -8,7 +8,9 @@ const {
     getProfile,
     logoutUser,
     verifyEmail,
-    refreshAccessToken
+    refreshAccessToken,
+    googleLogin,
+    googleCallback
 } = require("../controllers/auth.controller");
 const { protect } = require("../middlewares/auth.middleware");
 
@@ -22,6 +24,10 @@ router.post("/register", upload.fields([
 
 // LOGIN
 router.post("/login", loginUser);
+
+// GOOGLE LOGIN
+router.get("/google", googleLogin);
+router.get("/google/callback", googleCallback);
 
 // VERIFY EMAIL (OTP)
 router.post("/verify-email", verifyEmail);

@@ -1,11 +1,11 @@
-
+import React from "react";
 import ProviderCard from "./ProvidersCard";
 
 const ProvidersGrid = ({ providers }) => {
   if (!providers || providers.length === 0) {
     return (
-      <p className="text-center text-gray-500">
-        No providers available
+      <p className="text-center text-[var(--text-secondary)] py-12">
+        No providers available at the moment.
       </p>
     );
   }
